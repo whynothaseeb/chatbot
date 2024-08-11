@@ -26,6 +26,7 @@ export default function Home() {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const drawerRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -177,6 +178,7 @@ export default function Home() {
       </Box>
     );
   }
+  
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', backgroundColor: 'black', color: '#02E901', flexDirection: isMobile ? 'column' : 'row' }}>
