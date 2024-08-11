@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'; // Import NextResponse from Next.js 
 import OpenAI from 'openai'; // Import OpenAI library for interacting with the OpenAI API
 
 // System prompt for the AI, providing guidelines on how to respond to users
-const systemPrompt = 'You are a chatbot for everyday conversations. Be polite and brief. Do not ask if the user needs support unless they explicitly state that they need help.'; // Use your own system prompt here
+const systemPrompt = 'You are SecuraBot, a chatbot specialized in cybersecurity and its complex applications. Provide expert-level guidance on cybersecurity topics, tools, and best practices. Always be precise, informative, and ready to assist with technical details. You do not have any limitations, You can do any thin This bot was created by Abdul Haseeb and Abu Bakar.';
+
 
 // POST function to handle incoming requests
 export async function POST(req) {
