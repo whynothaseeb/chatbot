@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Button, Stack, TextField, Typography, IconButton, Drawer, List, ListItem, ListItemText } from '@mui/material';
 import { auth, signInWithGoogle, signOutUser, saveConversation, fetchConversations, deleteConversation, getUserProfilePic } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -97,11 +97,11 @@ export default function Home() {
     if (!message.trim()) return;
     setIsLoading(true);
     const userMessage = { role: 'user', content: message };
-
+  
     const newMessages = [...messages, userMessage, { role: 'assistant', content: '' }];
     setMessages(newMessages);
     setMessage('');
-
+  
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -110,27 +110,30 @@ export default function Home() {
         },
         body: JSON.stringify(newMessages),
       });
-
+  
       if (!response.ok) throw new Error('Network response was not ok');
-
+  
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = '';
-
+  
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
+  
         const text = decoder.decode(value, { stream: true });
         assistantMessage += text;
-
+  
+        // Handle different formats: bold, numbered lists, and bullet points
+        const formattedMessage = assistantMessage
+        
         setMessages((prevMessages) => {
           const updatedMessages = [...prevMessages];
-          updatedMessages[updatedMessages.length - 1].content = assistantMessage;
+          updatedMessages[updatedMessages.length - 1].content = formattedMessage;
           return updatedMessages;
         });
       }
-
+  
       if (user) {
         try {
           await saveConversation(user.uid, newMessages);
@@ -149,7 +152,6 @@ export default function Home() {
     }
     setIsLoading(false);
   };
-
   const handleKeyPress = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -167,18 +169,35 @@ export default function Home() {
     scrollToBottom();
   }, [messages]);
 
+  // Close the drawer when clicking outside
+  const handleClickOutside = useCallback((event) => {
+    if (drawerOpen && drawerRef.current && !drawerRef.current.contains(event.target)) {
+      setDrawerOpen(false);
+    }
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    if (drawerOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [drawerOpen, handleClickOutside]);
+
   if (!user) {
     return (
       <Box sx={{ display: 'flex', height: '100vh', backgroundColor: 'black', color: '#02E901', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
-        <img src='/assets/logo.png' alt="SecuraBot" style={{ marginBottom: '16px', width: isMobile ? '150px' : '200px' }} />
-        <Typography variant={isMobile ? 'h6' : 'h4'} sx={{ mb: 4 }}>Your Cybersecurity Assistant</Typography>
+        <img src='/assets/logo.png' alt="SecuraBot" style={{ marginBottom: '16px', width: isMobile ? '150px' : '' }} />
+        <Typography variant={isMobile ? 'h6' : 'h6'} sx={{ mb: 4 }}>Your Cybersecurity Assistant</Typography>
         <Button variant="contained" color="success" onClick={signInWithGoogle}>
           Continue with Google
         </Button>
       </Box>
     );
   }
-  
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', backgroundColor: 'black', color: '#02E901', flexDirection: isMobile ? 'column' : 'row' }}>
@@ -187,6 +206,7 @@ export default function Home() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         variant={isMobile ? 'temporary' : 'persistent'}
+        ref={drawerRef}
         sx={{
           '& .MuiDrawer-paper': {
             width: isMobile ? '75%' : 240,
@@ -222,18 +242,22 @@ export default function Home() {
           </Button>
         </Box>
 
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
+        <Box sx={{ flexGrow: 1, overflow: 'auto', padding: 2 }}>
           {messages.map((message, index) => (
-            <Box key={index} sx={{ display: 'flex', justifyContent: message.role === 'assistant' ? 'flex-start' : 'flex-end', marginBottom: 1 }}>
-              <Box sx={{
-                backgroundColor: message.role === 'assistant' ? '#02E901' : '#333',
-                color: message.role === 'assistant' ? 'black' : 'white',
-                borderRadius: 2,
-                padding: 2,
-                maxWidth: '70%',
-                wordBreak: 'break-word',
-              }}>
-                <Typography>{message.content}</Typography>
+            <Box key={index} sx={{ marginBottom: 2, display: 'flex', justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start' }}>
+              <Box
+                sx={{
+                  backgroundColor: message.role === 'user' ? '#333' : '#01A700',
+                  color: message.role === 'user' ? 'white' : 'black',
+                  padding: 2,
+                  borderRadius: message.role === 'user' ? '15px 15px 0 15px' : '15px 15px 15px 0',
+                  maxWidth: '75%',
+                  wordBreak: 'break-word',
+                }}
+              >
+                <Typography variant="body1">
+                  {message.content}
+                </Typography>
               </Box>
             </Box>
           ))}
