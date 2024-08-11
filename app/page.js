@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Box, Button, Stack, TextField, Typography, IconButton, Drawer, List, ListItem, ListItemText } from '@mui/material';
 import { auth, signInWithGoogle, signOutUser, saveConversation, fetchConversations, deleteConversation, getUserProfilePic } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -26,7 +26,6 @@ export default function Home() {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const drawerRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -167,24 +166,6 @@ export default function Home() {
     scrollToBottom();
   }, [messages]);
 
-  // Close the drawer when clicking outside
-  const handleClickOutside = useCallback((event) => {
-    if (drawerOpen && drawerRef.current && !drawerRef.current.contains(event.target)) {
-      setDrawerOpen(false);
-    }
-  }, [drawerOpen]);
-
-  useEffect(() => {
-    if (drawerOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [drawerOpen, handleClickOutside]);
-
   if (!user) {
     return (
       <Box sx={{ display: 'flex', height: '100vh', backgroundColor: 'black', color: '#02E901', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
@@ -204,7 +185,6 @@ export default function Home() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         variant={isMobile ? 'temporary' : 'persistent'}
-        ref={drawerRef}
         sx={{
           '& .MuiDrawer-paper': {
             width: isMobile ? '75%' : 240,
@@ -240,13 +220,17 @@ export default function Home() {
           </Button>
         </Box>
 
-        <Box sx={{ flexGrow: 1, overflow: 'auto', padding: 2 }}>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
           {messages.map((message, index) => (
-            <Box key={index} sx={{ marginBottom: 2 }}>
-              <Box sx={{ backgroundColor: message.role === 'user' ? '#111' : '#222', padding: 2, borderRadius: 1 }}>
-                <Typography variant="body1" sx={{ color: 'white' }}>
-                  {message.role === 'user' ? 'You' : 'SecuraBot'}:
-                </Typography>
+            <Box key={index} sx={{ display: 'flex', justifyContent: message.role === 'assistant' ? 'flex-start' : 'flex-end', marginBottom: 1 }}>
+              <Box sx={{
+                backgroundColor: message.role === 'assistant' ? '#02E901' : '#333',
+                color: message.role === 'assistant' ? 'black' : 'white',
+                borderRadius: 2,
+                padding: 2,
+                maxWidth: '70%',
+                wordBreak: 'break-word',
+              }}>
                 <Typography>{message.content}</Typography>
               </Box>
             </Box>
